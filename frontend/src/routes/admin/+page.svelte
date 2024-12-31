@@ -28,6 +28,10 @@
             socket.onmessage = (event) => {
                 players = JSON.parse(event.data).connectedPlayers;
             };
+
+            socket.onclose = () => {
+                connectWebSocket();
+            };
         });
 
     function handleSubmit() {
