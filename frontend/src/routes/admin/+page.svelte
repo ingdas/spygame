@@ -11,6 +11,7 @@
 
     let socket: WebSocket | null = null;
     let players: string[] = [];
+    let isGameStarted = false; // Track whether the game has started
 
     // Form data
     let theme = '';
@@ -18,15 +19,14 @@
     let ommittedSubject = '';
     let hint = '';
 
+    $: subjects = subjectsInput.split(',').map(s => s.trim()).filter(s => s);
+    $: isStartGameEnabled = players.length < subjects.length;
+
      onMount(() => {
-            socket = new WebSocket('ws://localhost:8089/admin');
+            socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/socket/admin`);
 
             socket.onmessage = (event) => {
                 players = JSON.parse(event.data).connectedPlayers;
-            };
-
-            socket.onclose = () => {
-                isConnected = false;
             };
         });
 
@@ -40,6 +40,7 @@
         };
 
         socket.send(JSON.stringify(gameInput));
+        isGameStarted = true;
     }
 
 
@@ -51,7 +52,9 @@
 </script>
 
 <div class="container">
-
+        {#if isGameStarted}
+            <h2 class="enjoy-message">Enjoy the game!</h2>
+        {:else}
         <div class="game-setup">
             <form class="setup-form" on:submit|preventDefault={handleSubmit}>
                 <h2>Game Setup</h2>
@@ -68,7 +71,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="subjects">Subjects (line-separated)</label>
+                    <label for="subjects">Subjects (comma-separated)</label>
                     <textarea
                         id="subjects"
                         bind:value={subjectsInput}
@@ -99,10 +102,10 @@
                     />
                 </div>
 
-                <button type="submit" class="submit-button">Start Game</button>
+                <button type="submit" class="submit-button"     disabled={!isStartGameEnabled}>Start Game</button>
             </form>
             <div class="players-list">
-                <h2>Connected Players</h2>
+                <h2>Connected Players: {players.length}</h2>
                 <div class="players">
                     {#each players as player}
                         <div class="player-card">
@@ -112,6 +115,8 @@
                 </div>
             </div>
         </div>
+            {/if}
+
 </div>
 
 <style>
