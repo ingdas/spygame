@@ -81,6 +81,7 @@
 
         socket.onclose = () => {
             isConnected = false;
+            connectWebSocket();
         };
     }
 
