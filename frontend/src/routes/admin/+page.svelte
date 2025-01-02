@@ -83,8 +83,8 @@
         };
 
         socket.send(JSON.stringify(gameInput));
-        //isGameStarted = true;
-        //localStorage.removeItem('gameSetup');
+        isGameStarted = true;
+        localStorage.removeItem('gameSetup');
     }
 
     onDestroy(() => {
