@@ -39,6 +39,7 @@
 		"@fortawesome/fontawesome-svg-core": "^6.6.0",
 		"@fortawesome/free-solid-svg-icons": "^6.6.0",
 		"@fortawesome/svelte-fontawesome": "^0.2.2",
-		"bulma": "^1.0.1"
+		"bulma": "^1.0.1",
+		"reconnecting-websocket": "^4.4.0"
 	}
 }

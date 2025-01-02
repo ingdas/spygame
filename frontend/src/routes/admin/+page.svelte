@@ -1,187 +1,186 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
-    import { createSocketStore } from '$lib/services/api';
+	import { onMount, onDestroy } from 'svelte';
+	import { createSocketStore } from '$lib/services/api';
 
-    interface GameInput {
-        messageType: string;
-        theme: string;
-        subjects: string[];
-        numSpies: number; // New field to specify number of spies
-        spySubjects: string[]; // New field to store subjects for spies
-        spyHints: string[]; // New field to store hints for spies
-        showSubjectsToNonSpies: boolean;
-    }
+	interface GameInput {
+		messageType: string;
+		theme: string;
+		subjects: string[];
+		numSpies: number; // New field to specify number of spies
+		spySubjects: string[]; // New field to store subjects for spies
+		spyHints: string[]; // New field to store hints for spies
+		showSubjectsToNonSpies: boolean;
+	}
 
-    let socket: WebSocket | null = null;
-    let players: string[] = [];
-    let isGameStarted = false;
+	let socket: WebSocket | null = null;
+	let players: string[] = [];
+	let isGameStarted = false;
 
-    let theme = '';
-    let subjectsInput = '';
-    let numSpies = 1; // Default number of spies
-    let spySubjects = ['']; // Array to store subjects for each spy (initialize with empty string for default spy)
-    let spyHints = ['']; // Array to store hints for each spy (initialize with empty string for default spy)
-    let showSubjectsToNonSpies = false;
+	let theme = '';
+	let subjectsInput = '';
+	let numSpies = 1; // Default number of spies
+	let spySubjects = ['']; // Array to store subjects for each spy (initialize with empty string for default spy)
+	let spyHints = ['']; // Array to store hints for each spy (initialize with empty string for default spy)
+	let showSubjectsToNonSpies = false;
 
-    $: subjects = subjectsInput.split(',').map(s => s.trim()).filter(s => s);
-    $: isStartGameEnabled = numSpies + subjects.length >= players.length;
+	$: subjects = subjectsInput.split(',').map(s => s.trim()).filter(s => s);
+	$: isStartGameEnabled = numSpies + subjects.length >= players.length;
 
-    $: {
-        if (!isGameStarted && socket) {
-            localStorage.setItem('gameSetup', JSON.stringify({
-                theme,
-                subjectsInput,
-                numSpies,
-                spySubjects,
-                spyHints,
-                showSubjectsToNonSpies
-            }));
-        }
-    }
+	$: {
+		if (!isGameStarted && socket) {
+			localStorage.setItem('gameSetup', JSON.stringify({
+				theme,
+				subjectsInput,
+				numSpies,
+				spySubjects,
+				spyHints,
+				showSubjectsToNonSpies
+			}));
+		}
+	}
 
-    onMount(() => {
-        const savedData = localStorage.getItem('gameSetup');
-        if (savedData) {
-            const parsed = JSON.parse(savedData);
-            theme = parsed.theme;
-            subjectsInput = parsed.subjectsInput;
-            numSpies = parsed.numSpies || 1; // Default to 1 spy if not provided
-            spySubjects = parsed.spySubjects || [''];
-            spyHints = parsed.spyHints || [''];
-            showSubjectsToNonSpies = parsed.showSubjectsToNonSpies;
-        }
+	onMount(() => {
+		const savedData = localStorage.getItem('gameSetup');
+		if (savedData) {
+			const parsed = JSON.parse(savedData);
+			theme = parsed.theme;
+			subjectsInput = parsed.subjectsInput;
+			numSpies = parsed.numSpies || 1; // Default to 1 spy if not provided
+			spySubjects = parsed.spySubjects || [''];
+			spyHints = parsed.spyHints || [''];
+			showSubjectsToNonSpies = parsed.showSubjectsToNonSpies;
+		}
 
-        socket = createSocketStore('socket/admin');
-        socket.onmessage = (event) => {
-            players = JSON.parse(event.data).connectedPlayers;
-        };
-    });
+		socket = createSocketStore('socket/admin');
+		socket.onmessage = (event) => {
+			players = JSON.parse(event.data).connectedPlayers;
+		};
+	});
 
-    function handleAddSpy() {
-        numSpies++;
-        spySubjects.push('');
-        spyHints.push('');
-    }
+	function handleAddSpy() {
+		numSpies++;
+		spySubjects.push('');
+		spyHints.push('');
+	}
 
-    function handleRemoveSpy(index) {
-        if (numSpies > 1) {
-            numSpies--;
-            spySubjects.splice(index, 1);
-            spyHints.splice(index, 1);
-        }
-    }
+	function handleRemoveSpy(index) {
+		if (numSpies > 1) {
+			numSpies--;
+			spySubjects.splice(index, 1);
+			spyHints.splice(index, 1);
+		}
+	}
 
-    function handleSubmit() {
-        const gameInput: GameInput = {
-            messageType: "GameInput",
-            theme,
-            subjects: subjectsInput.split(',').map(s => s.trim()).filter(s => s),
-            numSpies,
-            spySubjects,
-            spyHints,
-            showSubjectsToNonSpies
-        };
+	function handleSubmit() {
+		const gameInput: GameInput = {
+			messageType: 'GameInput',
+			theme,
+			subjects: subjectsInput.split(',').map(s => s.trim()).filter(s => s),
+			numSpies,
+			spySubjects,
+			spyHints,
+			showSubjectsToNonSpies
+		};
 
-        socket.send(JSON.stringify(gameInput));
-        isGameStarted = true;
-        localStorage.removeItem('gameSetup');
-    }
+		socket.send(JSON.stringify(gameInput));
+		isGameStarted = true;
+		localStorage.removeItem('gameSetup');
+	}
 
-    onDestroy(() => {
-        if (socket) {
-            socket.close();
-        }
-    });
+	onDestroy(() => {
+		if (socket) {
+			socket.close();
+		}
+	});
 </script>
 
 <div class="container">
-        {#if isGameStarted}
-            <h2 class="enjoy-message">Enjoy the game!</h2>
-        {:else}
-        <div class="game-setup">
-            <form class="setup-form" on:submit|preventDefault={handleSubmit}>
-                <h2>Game Setup</h2>
+	{#if isGameStarted}
+		<h2 class="enjoy-message">Enjoy the game!</h2>
+	{:else}
+		<div class="game-setup">
+			<form class="setup-form" on:submit|preventDefault={handleSubmit}>
+				<h2>Game Setup</h2>
 
-                <div class="form-group">
-                    <label for="theme">Theme</label>
-                    <input
-                        type="text"
-                        id="theme"
-                        bind:value={theme}
-                        placeholder="Example: Days of the week"
-                        required
-                    />
-                </div>
+				<div class="form-group">
+					<label for="theme">Theme</label>
+					<input
+						type="text"
+						id="theme"
+						bind:value={theme}
+						placeholder="Example: Days of the week"
+						required
+					/>
+				</div>
 
-                <div class="form-group">
-                    <label for="subjects">Subjects (comma-separated)</label>
-                    <textarea
-                        id="subjects"
-                        bind:value={subjectsInput}
-                        placeholder="Monday, Thursday, Saturday"
-                        required
-                    ></textarea>
-                </div>
+				<div class="form-group">
+					<label for="subjects">Subjects (comma-separated)</label>
+					<textarea
+						id="subjects"
+						bind:value={subjectsInput}
+						placeholder="Monday, Thursday, Saturday"
+						required
+					></textarea>
+				</div>
 
-                <div class="form-group">
-<div class="form-group">
-                    <label for="numSpies">Number of Spies</label>
-                    <div class="spy-controls">
-                        <button on:click={handleRemoveSpy} disabled={numSpies === 1}>-</button>
-                        <span>{numSpies}</span>
-                        <button on:click={handleAddSpy}>+</button>
-                    </div>
-                </div>
+					<div class="form-group">
+						<label for="numSpies">Number of Spies</label>
+						<div class="spy-controls">
+							<button on:click={handleRemoveSpy} disabled={numSpies === 1}>-</button>
+							<span>{numSpies}</span>
+							<button on:click={handleAddSpy}>+</button>
+						</div>
+					</div>
 
-                {#each Array(numSpies) as _, i}
-                    <div class="spy-inputs">
-                        <div class="form-group">
-                            <label for={`spySubject${i}`}>Spy {i + 1} Subject</label>
-                            <input
-                                type="text"
-                                id={`spySubject${i}`}
-                                bind:value={spySubjects[i]}
-                                placeholder="Sunday"
-                                required
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label for={`spyHint${i}`}>Spy {i + 1} Hint</label>
-                            <input
-                                type="text"
-                                id={`spyHint${i}`}
-                                bind:value={spyHints[i]}
-                                placeholder="Answer with something warm"
-                                required
-                            />
-                        </div>
-                    </div>
-                {/each}
+					{#each Array(numSpies) as _, i}
+						<div class="spy-inputs">
+							<div class="form-group">
+								<label for={`spySubject${i}`}>Spy {i + 1} Subject</label>
+								<input
+									type="text"
+									id={`spySubject${i}`}
+									bind:value={spySubjects[i]}
+									placeholder="Sunday"
+									required
+								/>
+							</div>
+							<div class="form-group">
+								<label for={`spyHint${i}`}>Spy {i + 1} Hint</label>
+								<input
+									type="text"
+									id={`spyHint${i}`}
+									bind:value={spyHints[i]}
+									placeholder="Answer with something warm"
+									required
+								/>
+							</div>
+						</div>
+					{/each}
 
-                <div class="form-group checkbox">
-                    <label>
-                        <input
-                            type="checkbox"
-                            bind:checked={showSubjectsToNonSpies}
-                        />
-                        Show subject list to non-spies
-                    </label>
-                </div>
+					<div class="form-group checkbox">
+						<label>
+							<input
+								type="checkbox"
+								bind:checked={showSubjectsToNonSpies}
+							/>
+							Show subject list to non-spies
+						</label>
+					</div>
 
-                <button type="submit" class="submit-button" disabled={!isStartGameEnabled}>Start Game</button>
-            </form>
-            <div class="players-list">
-                <h2>Connected Players: {players.length}</h2>
-                <div class="players">
-                    {#each players as player}
-                        <div class="player-card">
-                            <span class="player-name">{player}</span>
-                        </div>
-                    {/each}
-                </div>
-            </div>
-        </div>
-            {/if}
+					<button type="submit" class="submit-button" disabled={!isStartGameEnabled}>Start Game</button>
+			</form>
+			<div class="players-list">
+				<h2>Connected Players: {players.length}</h2>
+				<div class="players">
+					{#each players as player}
+						<div class="player-card">
+							<span class="player-name">{player}</span>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
 
 </div>
 
@@ -301,6 +300,7 @@
         font-size: 1.2rem;
         margin-top: 1rem;
     }
+
     .spy-controls {
         display: flex;
         align-items: center;
