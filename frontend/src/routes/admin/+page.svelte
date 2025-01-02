@@ -12,18 +12,39 @@
 
     let socket: WebSocket | null = null;
     let players: string[] = [];
-    let isGameStarted = false; // Track whether the game has started
+    let isGameStarted = false;
 
-    // Form data
     let theme = '';
-    let subjectsInput = ''; // Will be split  into array
+    let subjectsInput = '';
     let ommittedSubject = '';
     let hint = '';
 
     $: subjects = subjectsInput.split(',').map(s => s.trim()).filter(s => s);
     $: isStartGameEnabled = players.length < subjects.length;
 
-     onMount(() => {
+    // Save form data to localStorage whenever it changes
+    $: {
+        if (!isGameStarted && socket) {
+            localStorage.setItem('gameSetup', JSON.stringify({
+                theme,
+                subjectsInput,
+                ommittedSubject,
+                hint
+            }));
+        }
+    }
+
+    onMount(() => {
+        // Load saved form data
+        const savedData = localStorage.getItem('gameSetup');
+        if (savedData) {
+            const parsed = JSON.parse(savedData);
+            theme = parsed.theme;
+            subjectsInput = parsed.subjectsInput;
+            ommittedSubject = parsed.ommittedSubject;
+            hint = parsed.hint;
+        }
+
         socket = createSocketStore('socket/admin');
         socket.onmessage = (event) => {
             players = JSON.parse(event.data).connectedPlayers;
@@ -41,8 +62,8 @@
 
         socket.send(JSON.stringify(gameInput));
         isGameStarted = true;
+        localStorage.removeItem('gameSetup'); // Clear saved data
     }
-
 
     onDestroy(() => {
         if (socket) {
