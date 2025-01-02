@@ -126,7 +126,7 @@
 </script>
 
 <div class="container">
-    {#if playerName == ''}
+    {#if !isConnected}
         <div class="join-form">
             <input
                 type="text"
@@ -188,6 +188,7 @@
                                 <span class="subject-label">Your Subject:</span>
                                 <span class="subject-text">{gameState.subject}</span>
                             </div>
+                            {#if gameState.subjectList.length > 0}
                             <div class="subjects-list">
                                 <span class="subjects-label">Other Subjects:</span>
                                 <div class="subjects-grid">
@@ -196,6 +197,7 @@
                                     {/each}
                                 </div>
                             </div>
+                            {/if}
                             <div class="player-notes">
                                 <h3>Player Notes</h3>
                                 <div class="notes-list">

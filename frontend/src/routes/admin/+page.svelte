@@ -8,6 +8,7 @@
         subjects: string[];
         ommittedSubject: string;
         hint: string;
+        showSubjectsToNonSpies: boolean;
     }
 
     let socket: WebSocket | null = null;
@@ -18,24 +19,24 @@
     let subjectsInput = '';
     let ommittedSubject = '';
     let hint = '';
+    let showSubjectsToNonSpies = false;
 
     $: subjects = subjectsInput.split(',').map(s => s.trim()).filter(s => s);
     $: isStartGameEnabled = players.length < subjects.length;
 
-    // Save form data to localStorage whenever it changes
     $: {
         if (!isGameStarted && socket) {
             localStorage.setItem('gameSetup', JSON.stringify({
                 theme,
                 subjectsInput,
                 ommittedSubject,
-                hint
+                hint,
+                showSubjectsToNonSpies
             }));
         }
     }
 
     onMount(() => {
-        // Load saved form data
         const savedData = localStorage.getItem('gameSetup');
         if (savedData) {
             const parsed = JSON.parse(savedData);
@@ -43,6 +44,7 @@
             subjectsInput = parsed.subjectsInput;
             ommittedSubject = parsed.ommittedSubject;
             hint = parsed.hint;
+            showSubjectsToNonSpies = parsed.showSubjectsToNonSpies;
         }
 
         socket = createSocketStore('socket/admin');
@@ -57,12 +59,13 @@
             theme,
             subjects: subjectsInput.split(',').map(s => s.trim()).filter(s => s),
             ommittedSubject,
-            hint
+            hint,
+            showSubjectsToNonSpies
         };
 
         socket.send(JSON.stringify(gameInput));
         isGameStarted = true;
-        localStorage.removeItem('gameSetup'); // Clear saved data
+        localStorage.removeItem('gameSetup');
     }
 
     onDestroy(() => {
@@ -113,7 +116,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="hints">Hint</label>
+                    <label for="hints">The Spy's Hint</label>
                     <input
                         type="text"
                         id="hints"
@@ -123,7 +126,17 @@
                     />
                 </div>
 
-                <button type="submit" class="submit-button"     disabled={!isStartGameEnabled}>Start Game</button>
+                <div class="form-group checkbox">
+                    <label>
+                        <input
+                            type="checkbox"
+                            bind:checked={showSubjectsToNonSpies}
+                        />
+                        Show subject list to non-spies
+                    </label>
+                </div>
+
+                <button type="submit" class="submit-button" disabled={!isStartGameEnabled}>Start Game</button>
             </form>
             <div class="players-list">
                 <h2>Connected Players: {players.length}</h2>
@@ -207,6 +220,22 @@
 
     .form-group {
         margin-bottom: 1.5rem;
+    }
+
+    .checkbox {
+        display: flex;
+        align-items: center;
+    }
+
+    .checkbox input {
+        width: auto;
+        margin-right: 0.5rem;
+    }
+
+    .checkbox label {
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
     }
 
     label {

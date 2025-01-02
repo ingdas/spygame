@@ -86,13 +86,14 @@ fun Application.main() {
                             )
 
                             for ((session, subject) in (sessions - spy).zip(gameInput.subjects.shuffled())) {
+                                val subjectList = if (gameInput.showSubjectsToNonSpies) fulList.shuffled() - subject else emptyList()
                                 session.send(
                                     Json.encodeToString(
                                         PlayerState(
                                             isSpy = false,
                                             subject = subject,
                                             theme = gameInput.theme,
-                                            subjectList = fulList.shuffled() - subject,
+                                            subjectList = subjectList,
                                             hint = "",
                                             allPlayers = names.shuffled()
                                         )
@@ -150,6 +151,7 @@ data class GameInput(
     val theme: String,
     val subjects: List<String>,
     val ommittedSubject: String,
+    val showSubjectsToNonSpies : Boolean,
     val hint: String
 )
 
