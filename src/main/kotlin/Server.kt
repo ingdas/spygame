@@ -12,6 +12,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
+import java.util.*
 import kotlin.collections.set
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
@@ -64,29 +65,38 @@ fun Application.main() {
                         if (frame is Frame.Text) {
                             val gameInput: GameInput = Json.decodeFromString(frame.readText())
                             println("Starting Game $gameInput")
-                            val fulList = (gameInput.subjects + gameInput.ommittedSubject)
+                            val fulList = (gameInput.subjects + gameInput.spySubjects).map {
+                                it.replaceFirstChar {
+                                    if (it.isLowerCase()) it.titlecase(
+                                        Locale.getDefault()
+                                    ) else it.toString()
+                                }
+                            }
 
 
                             val connectedPlayers = gameState.connectedPlayers
-                            val sessions = connectedPlayers.keys
+                            val sessions = connectedPlayers.keys.toSet()
                             val names = connectedPlayers.values.toList()
 
-                            val spy = sessions.random()
-                            spy.send(
-                                Json.encodeToString(
-                                    PlayerState(
-                                        isSpy = true,
-                                        hint = gameInput.hint,
-                                        subject = "",
-                                        theme = "",
-                                        subjectList = emptyList(),
-                                        allPlayers = names.shuffled()
+                            val spies = sessions.shuffled().subList(0, gameInput.spyHints.size).toSet()
+                            for ((spy, hint) in spies.zip(gameInput.spyHints)) {
+                                spy.send(
+                                    Json.encodeToString(
+                                        PlayerState(
+                                            isSpy = true,
+                                            hint = hint,
+                                            subject = "",
+                                            theme = "",
+                                            subjectList = emptyList(),
+                                            allPlayers = names.shuffled()
+                                        )
                                     )
                                 )
-                            )
+                            }
 
-                            for ((session, subject) in (sessions - spy).zip(gameInput.subjects.shuffled())) {
-                                val subjectList = if (gameInput.showSubjectsToNonSpies) fulList.shuffled() - subject else emptyList()
+                            for ((session, subject) in (sessions - spies).zip(gameInput.subjects.shuffled())) {
+                                val subjectList =
+                                    if (gameInput.showSubjectsToNonSpies) fulList.shuffled() - subject else emptyList()
                                 session.send(
                                     Json.encodeToString(
                                         PlayerState(
@@ -108,7 +118,8 @@ fun Application.main() {
                     gameState.admins.remove(this)
                 }
             } catch (e: Exception) {
-                println("Error in websocket connection: ${e.message}")
+                println("Error in websocket connection:")
+                e.printStackTrace()
             }
         }
 
@@ -150,9 +161,10 @@ data class GameInput(
     val messageType: String = "GameInput",
     val theme: String,
     val subjects: List<String>,
-    val ommittedSubject: String,
-    val showSubjectsToNonSpies : Boolean,
-    val hint: String
+    val spySubjects: List<String>,
+    val spyHints: List<String>,
+    val showSubjectsToNonSpies: Boolean,
+    val numSpies: Int
 )
 
 @Serializable

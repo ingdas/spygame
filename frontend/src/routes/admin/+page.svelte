@@ -6,8 +6,9 @@
         messageType: string;
         theme: string;
         subjects: string[];
-        ommittedSubject: string;
-        hint: string;
+        numSpies: number; // New field to specify number of spies
+        spySubjects: string[]; // New field to store subjects for spies
+        spyHints: string[]; // New field to store hints for spies
         showSubjectsToNonSpies: boolean;
     }
 
@@ -17,20 +18,22 @@
 
     let theme = '';
     let subjectsInput = '';
-    let ommittedSubject = '';
-    let hint = '';
+    let numSpies = 1; // Default number of spies
+    let spySubjects = ['']; // Array to store subjects for each spy (initialize with empty string for default spy)
+    let spyHints = ['']; // Array to store hints for each spy (initialize with empty string for default spy)
     let showSubjectsToNonSpies = false;
 
     $: subjects = subjectsInput.split(',').map(s => s.trim()).filter(s => s);
-    $: isStartGameEnabled = players.length < subjects.length;
+    $: isStartGameEnabled = numSpies + subjects.length >= players.length;
 
     $: {
         if (!isGameStarted && socket) {
             localStorage.setItem('gameSetup', JSON.stringify({
                 theme,
                 subjectsInput,
-                ommittedSubject,
-                hint,
+                numSpies,
+                spySubjects,
+                spyHints,
                 showSubjectsToNonSpies
             }));
         }
@@ -42,8 +45,9 @@
             const parsed = JSON.parse(savedData);
             theme = parsed.theme;
             subjectsInput = parsed.subjectsInput;
-            ommittedSubject = parsed.ommittedSubject;
-            hint = parsed.hint;
+            numSpies = parsed.numSpies || 1; // Default to 1 spy if not provided
+            spySubjects = parsed.spySubjects || [''];
+            spyHints = parsed.spyHints || [''];
             showSubjectsToNonSpies = parsed.showSubjectsToNonSpies;
         }
 
@@ -53,19 +57,34 @@
         };
     });
 
+    function handleAddSpy() {
+        numSpies++;
+        spySubjects.push('');
+        spyHints.push('');
+    }
+
+    function handleRemoveSpy(index) {
+        if (numSpies > 1) {
+            numSpies--;
+            spySubjects.splice(index, 1);
+            spyHints.splice(index, 1);
+        }
+    }
+
     function handleSubmit() {
         const gameInput: GameInput = {
             messageType: "GameInput",
             theme,
             subjects: subjectsInput.split(',').map(s => s.trim()).filter(s => s),
-            ommittedSubject,
-            hint,
+            numSpies,
+            spySubjects,
+            spyHints,
             showSubjectsToNonSpies
         };
 
         socket.send(JSON.stringify(gameInput));
-        isGameStarted = true;
-        localStorage.removeItem('gameSetup');
+        //isGameStarted = true;
+        //localStorage.removeItem('gameSetup');
     }
 
     onDestroy(() => {
@@ -105,26 +124,39 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="ommitted">The Spy's Subject</label>
-                    <input
-                        type="text"
-                        id="ommitted"
-                        bind:value={ommittedSubject}
-                        placeholder="Sunday"
-                        required
-                    />
+<div class="form-group">
+                    <label for="numSpies">Number of Spies</label>
+                    <div class="spy-controls">
+                        <button on:click={handleRemoveSpy} disabled={numSpies === 1}>-</button>
+                        <span>{numSpies}</span>
+                        <button on:click={handleAddSpy}>+</button>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="hints">The Spy's Hint</label>
-                    <input
-                        type="text"
-                        id="hints"
-                        bind:value={hint}
-                        placeholder="Answer with something warm"
-                        required
-                    />
-                </div>
+                {#each Array(numSpies) as _, i}
+                    <div class="spy-inputs">
+                        <div class="form-group">
+                            <label for={`spySubject${i}`}>Spy {i + 1} Subject</label>
+                            <input
+                                type="text"
+                                id={`spySubject${i}`}
+                                bind:value={spySubjects[i]}
+                                placeholder="Sunday"
+                                required
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for={`spyHint${i}`}>Spy {i + 1} Hint</label>
+                            <input
+                                type="text"
+                                id={`spyHint${i}`}
+                                bind:value={spyHints[i]}
+                                placeholder="Answer with something warm"
+                                required
+                            />
+                        </div>
+                    </div>
+                {/each}
 
                 <div class="form-group checkbox">
                     <label>
@@ -268,5 +300,22 @@
         padding: 0.75rem;
         font-size: 1.2rem;
         margin-top: 1rem;
+    }
+    .spy-controls {
+        display: flex;
+        align-items: center;
+    }
+
+    .spy-controls button {
+        padding: 0.25rem 0.5rem;
+        font-size: 1.2rem;
+    }
+
+    .spy-controls span {
+        margin: 0 0.5rem;
+    }
+
+    .spy-inputs {
+        margin-bottom: 1rem;
     }
 </style>
