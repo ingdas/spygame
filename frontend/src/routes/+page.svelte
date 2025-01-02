@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
+    import { createSocketStore } from '$lib/services/api';
 
     interface GameInput {
         messageType: string;
@@ -54,7 +55,7 @@
 
         savePlayerNameToLocalStorage();
 
-        socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/socket/play`);
+        socket = createSocketStore('socket/play');
 
         socket.onopen = () => {
             isConnected = true;
@@ -125,7 +126,7 @@
 </script>
 
 <div class="container">
-    {#if !isConnected}
+    {#if playerName == ''}
         <div class="join-form">
             <input
                 type="text"

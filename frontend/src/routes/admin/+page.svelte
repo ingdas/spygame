@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
+    import { createSocketStore } from '$lib/services/api';
 
     interface GameInput {
         messageType: string;
@@ -23,12 +24,11 @@
     $: isStartGameEnabled = players.length < subjects.length;
 
      onMount(() => {
-            socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/socket/admin`);
-
-            socket.onmessage = (event) => {
-                players = JSON.parse(event.data).connectedPlayers;
-            };
-        });
+        socket = createSocketStore('socket/admin');
+        socket.onmessage = (event) => {
+            players = JSON.parse(event.data).connectedPlayers;
+        };
+    });
 
     function handleSubmit() {
         const gameInput: GameInput = {
