@@ -349,4 +349,6 @@ ReconnectingWebSocket.prototype.onerror = function(event) {};
  */
 ReconnectingWebSocket.debugAll = false;
 
-export default ReconnectingWebSocket
+export {
+    ReconnectingWebSocket
+}

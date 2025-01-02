@@ -1,4 +1,4 @@
-import ReconnectingWebSocket from '$lib/ReconnectingWebSocket.ts';
+import { ReconnectingWebSocket } from '$lib/ReconnectingWebSocket';
 
 export function createSocketStore(path) {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
